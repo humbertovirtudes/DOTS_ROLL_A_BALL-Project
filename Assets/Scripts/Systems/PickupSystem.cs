@@ -6,46 +6,49 @@ using Unity.Physics;
 using Unity.Physics.Systems;
 using UnityEngine;
 
-[AlwaysSynchronizeSystem]
-public class PickupSystem : JobComponentSystem {
+namespace Systems {
 
-  private BeginInitializationEntityCommandBufferSystem bufferSystem;
-  private BuildPhysicsWorld physicsWorld;
-  private StepPhysicsWorld stepPhysicsWorld;
+  [AlwaysSynchronizeSystem]
+  public class PickupSystem : JobComponentSystem {
 
-  protected override void OnCreate() {
-    bufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-    physicsWorld = World.GetOrCreateSystem<BuildPhysicsWorld>();
-    stepPhysicsWorld = World.GetOrCreateSystem<StepPhysicsWorld>();
-  }
+    private BeginInitializationEntityCommandBufferSystem bufferSystem;
+    private BuildPhysicsWorld physicsWorld;
+    private StepPhysicsWorld stepPhysicsWorld;
 
-  protected override JobHandle OnUpdate(JobHandle inputDeps) {
-    TriggerJob triggerJob = new TriggerJob {
-      speedEntities = GetComponentDataFromEntity<SpeedData>(),
-      entitiesToDelete = GetComponentDataFromEntity<DeleteTag>(),
-      commandBuffer = bufferSystem.CreateCommandBuffer(),
-    };
-
-    return triggerJob.Schedule(stepPhysicsWorld.Simulation, ref physicsWorld.PhysicsWorld, inputDeps);
-  }
-
-  private struct TriggerJob : ITriggerEventsJob {
-
-    public ComponentDataFromEntity<SpeedData> speedEntities;
-    public ComponentDataFromEntity<DeleteTag> entitiesToDelete;
-    public EntityCommandBuffer commandBuffer;
-
-    public void Execute(TriggerEvent triggerEvent) {
-      HandleDeletionTagging(triggerEvent.EntityB);
-      HandleDeletionTagging(triggerEvent.EntityA);
+    protected override void OnCreate() {
+      bufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+      physicsWorld = World.GetOrCreateSystem<BuildPhysicsWorld>();
+      stepPhysicsWorld = World.GetOrCreateSystem<StepPhysicsWorld>();
     }
 
-    private void HandleDeletionTagging(Entity ent) {
-      if (speedEntities.HasComponent(ent)) {
-        return;
+    protected override JobHandle OnUpdate(JobHandle inputDeps) {
+      TriggerJob triggerJob = new TriggerJob {
+        speedEntities = GetComponentDataFromEntity<SpeedData>(),
+        entitiesToDelete = GetComponentDataFromEntity<DeleteTag>(),
+        commandBuffer = bufferSystem.CreateCommandBuffer(),
+      };
+
+      return triggerJob.Schedule(stepPhysicsWorld.Simulation, ref physicsWorld.PhysicsWorld, inputDeps);
+    }
+
+    private struct TriggerJob : ITriggerEventsJob {
+
+      public ComponentDataFromEntity<SpeedData> speedEntities;
+      public ComponentDataFromEntity<DeleteTag> entitiesToDelete;
+      public EntityCommandBuffer commandBuffer;
+
+      public void Execute(TriggerEvent triggerEvent) {
+        HandleDeletionTagging(triggerEvent.EntityB);
+        HandleDeletionTagging(triggerEvent.EntityA);
       }
-      if (!entitiesToDelete.HasComponent(ent)) {
-        commandBuffer.AddComponent(ent, new DeleteTag());
+
+      private void HandleDeletionTagging(Entity ent) {
+        if (speedEntities.HasComponent(ent)) {
+          return;
+        }
+        if (!entitiesToDelete.HasComponent(ent)) {
+          commandBuffer.AddComponent(ent, new DeleteTag());
+        }
       }
     }
   }
