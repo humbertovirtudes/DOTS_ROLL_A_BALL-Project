@@ -1,7 +1,6 @@
 using Unity.Entities;
 using UnityEngine;
 
-[RequiresEntityConversion]
 [AddComponentMenu("Custom/Leader")]
 public class LeaderAuthoring : MonoBehaviour, IConvertGameObjectToEntity {
 
@@ -15,15 +14,5 @@ public class LeaderAuthoring : MonoBehaviour, IConvertGameObjectToEntity {
     }
 
     cameraFollow.ballEntity = entity;
-  }
-
-  // Start is called before the first frame update
-  void Start() {
-
-  }
-
-  // Update is called once per frame
-  void Update() {
-
   }
 }
